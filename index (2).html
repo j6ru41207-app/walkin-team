@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>品牌工作站</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@300;400&family=Space+Mono&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --white:#fff;--bg:#f7f6f4;--bg2:#f0eeeb;
+  --line:#d8d5d0;--line2:#ece9e4;
+  --ink:#1a1917;--ink2:#4a4840;--ink3:#9a9890;--ink4:#c8c5c0;
+  --myst:#8a7ab0;--wloop:#b89050;--tl:#b87050;--yoga:#60a878;
+}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);min-height:100vh;padding:48px 32px 80px;color:var(--ink);font-weight:300;}
+.page-wrap{max-width:66.666%;margin:0 auto;}
+@media(max-width:768px){
+  .page-wrap{max-width:100%;}
+  body{padding:20px 14px 60px;font-size:13px;}
+  .header-title{font-size:22px;}
+  .col-name{font-size:17px;}
+  .s-name{font-size:13px;}
+  .tl{font-size:13px;}
+  .task-note{font-size:12px;}
+  .ctrl-sel,.ctrl-lbl{font-size:11px;font-weight:400;}
+  .atag{font-size:11px;padding:3px 7px;font-weight:400;}
+  .sc-alert{font-size:11px;}
+  .col-sub,.col-status,.s-type,.s-num,.assign-lbl{font-weight:300;font-size:11px;}
+  .add-task-btn{font-size:11px;}
+  .sc-hdr{flex-wrap:wrap;gap:4px;}
+}
+.cal-link-btn{position:fixed;bottom:28px;right:28px;z-index:100;background:var(--ink);color:#fff;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 18px;text-decoration:none;border:none;cursor:pointer;transition:background 0.2s;box-shadow:0 4px 16px rgba(0,0,0,0.18);}
+.cal-link-btn:hover{background:var(--ink2);}
+.header{display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:24px;margin-bottom:40px;border-bottom:1px solid var(--line);gap:16px;}
+.header-eyebrow{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--ink3);text-transform:uppercase;margin-bottom:10px;}
+.header-title{font-family:'Noto Serif TC',serif;font-size:clamp(22px,3vw,34px);font-weight:300;letter-spacing:0.12em;color:var(--ink);line-height:1.2;}
+.header-title span{display:block;font-size:0.5em;font-family:'Space Mono',monospace;letter-spacing:3px;color:var(--ink3);margin-top:6px;}
+.header-btns{display:flex;gap:8px;flex-shrink:0;align-items:center;}
+.save-status{font-family:'Space Mono',monospace;font-size:9px;color:var(--ink4);letter-spacing:1px;}
+.btn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:9px 18px;border:1px solid var(--ink2);background:transparent;color:var(--ink2);cursor:pointer;transition:all 0.2s;}
+.btn:hover,.btn.primary{background:var(--ink);color:var(--white);border-color:var(--ink);}
+.btn.primary:hover{background:var(--ink2);}
+.kanban{display:grid;grid-template-columns:1fr;gap:24px;}
+.brand-col{border:1.5px solid var(--line);box-shadow:0 2px 12px rgba(0,0,0,0.05);}
+.col-header{padding:20px 20px 16px;border-bottom:1px solid var(--line2);position:relative;}
+.col-accent{position:absolute;top:0;left:0;right:0;height:4px;}
+.col-emoji{font-size:18px;line-height:1;margin-bottom:10px;display:block;}
+.col-name{font-family:'Noto Serif TC',serif;font-size:22px;font-weight:400;letter-spacing:0.06em;color:var(--ink);line-height:1.3;}
+.col-sub{font-weight:300;font-family:'Space Mono',monospace;font-size:9px;color:var(--ink4);letter-spacing:1.5px;margin-top:6px;}
+.col-status{font-weight:300;display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 0;margin-top:10px;border-bottom:1px solid currentColor;}
+.col-body{padding:14px;display:flex;flex-direction:column;gap:6px;background:transparent;flex:1;}
+.sc{padding:12px 14px 11px;border:1.5px solid var(--line2);background:var(--white);}
+.sc-hdr{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line2);}
+.s-num{font-weight:300;font-family:'Space Mono',monospace;font-size:9px;color:var(--ink4);flex-shrink:0;letter-spacing:1px;}
+.s-name{font-size:14px;font-weight:500;color:var(--ink);flex:1;letter-spacing:0.03em;line-height:1.3;}
+.s-type{font-family:'Space Mono',monospace;font-size:9px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase;flex-shrink:0;font-weight:400;}
+.task-list{list-style:none;display:flex;flex-direction:column;gap:0;}
+.task-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg2);flex-wrap:nowrap;}
+.task-row:last-child{border-bottom:none;}
+.ck{width:13px;height:13px;border:1px solid var(--line);flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;background:var(--white);margin-top:3px;position:relative;transition:all 0.15s;}
+.ck:checked{background:var(--ink2);border-color:var(--ink2);}
+.ck:checked::after{content:'';position:absolute;top:1px;left:3px;width:4px;height:6px;border:1.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg);}
+.task-main{display:flex;flex-direction:column;flex:1;min-width:0;}
+.tl{font-size:13px;line-height:1.5;color:var(--ink2);cursor:pointer;}
+.ck:checked~.task-main .tl{text-decoration:line-through;color:var(--ink4);}
+.task-note{width:100%;margin-top:3px;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:300;color:var(--ink2);border:none;border-bottom:1px dashed var(--line);padding:2px 0;background:transparent;outline:none;}
+.task-note::placeholder{color:var(--ink4);font-size:11px;}
+.task-note:focus{border-bottom-color:var(--ink3);}
+.task-controls{display:flex;align-items:center;gap:4px;flex-shrink:0;flex-wrap:nowrap;}
+.ctrl-unit{display:flex;align-items:center;gap:3px;}
+.ctrl-lbl{font-family:'Space Mono',monospace;font-size:9px;color:var(--ink4);letter-spacing:1px;text-transform:uppercase;flex-shrink:0;font-weight:300;}
+.ctrl-sel{font-size:11px;font-family:'Noto Sans TC',sans-serif;border:none;border-bottom:1px solid var(--line);padding:1px 2px;background:transparent;color:var(--ink3);cursor:pointer;appearance:none;-webkit-appearance:none;}
+.ctrl-sel.on{color:var(--ink);border-color:var(--ink2);}
+.freq-sel{min-width:44px;}
+.day-sel{min-width:38px;}
+.assign-blk{margin-top:9px;padding-top:8px;border-top:1px solid var(--line2);}
+.assign-lbl{font-family:'Space Mono',monospace;font-size:9px;color:var(--ink4);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;}
+.assign-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.atag{font-family:'Space Mono',monospace;font-size:9px;padding:3px 9px;border:1px solid var(--line);cursor:pointer;background:var(--white);color:var(--ink3);transition:all 0.15s;user-select:none;font-weight:300;}
+.atag.on{border-color:var(--ink2);background:var(--ink);color:var(--white);}
+.del-btn{flex-shrink:0;width:18px;height:18px;border:none;background:transparent;color:var(--ink4);cursor:pointer;font-size:14px;line-height:1;padding:0;margin-top:2px;transition:color 0.15s;display:flex;align-items:center;justify-content:center;}
+.del-btn:hover{color:#c04040;}
+.add-task-btn{display:block;width:100%;margin-top:8px;padding:7px 0;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);background:transparent;border:1px dashed var(--line);cursor:pointer;transition:all 0.15s;}
+.add-task-btn:hover{color:var(--ink);border-color:var(--ink2);background:var(--bg);}
+.add-task-row{display:flex;align-items:center;gap:6px;margin-top:6px;padding:6px 0;border-top:1px solid var(--line2);}
+.add-task-input{flex:1;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:300;color:var(--ink);border:none;border-bottom:1px solid var(--ink2);padding:3px 4px;background:transparent;outline:none;}
+.add-task-input::placeholder{color:var(--ink4);}
+.add-ok{font-family:'Space Mono',monospace;font-size:9px;padding:4px 10px;border:1px solid var(--ink2);background:var(--ink);color:var(--white);cursor:pointer;}
+.add-no{font-family:'Space Mono',monospace;font-size:9px;padding:4px 10px;border:1px solid var(--line);background:transparent;color:var(--ink3);cursor:pointer;}
+.sc-alert{background:var(--white);padding:9px 13px;font-family:'Space Mono',monospace;font-size:9px;color:var(--ink3);letter-spacing:0.8px;line-height:1.6;border-top:1px solid var(--line2);}
+.col-myst .col-accent{background:var(--myst);}
+.col-myst .col-header{background:#f4f0fc;}
+.col-myst{background:#f9f7fe;}
+.col-myst .col-status{color:var(--myst);}
+.col-wloop .col-accent{background:var(--wloop);}
+.col-wloop .col-header{background:#fdf7e8;}
+.col-wloop{background:#fefcf4;}
+.col-wloop .col-status{color:var(--wloop);}
+.col-tl .col-accent{background:var(--tl);}
+.col-tl .col-header{background:#fdf2ec;}
+.col-tl{background:#fef8f5;}
+.col-tl .col-status{color:var(--tl);}
+.col-yoga .col-accent{background:var(--yoga);}
+.col-yoga .col-header{background:#edf8f2;}
+.col-yoga{background:#f4fbf7;}
+.col-yoga .col-status{color:var(--yoga);}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+<div class="header">
+  <div>
+    <div class="header-eyebrow">Brand Workstation · 2026</div>
+    <div class="header-title">品牌工作站<span>TEAM · 任務分工</span></div>
+  </div>
+  <div class="header-btns">
+    <span class="save-status" id="saveStatus">已自動儲存</span>
+    <button class="btn" onclick="resetDefaults()">重置分配</button>
+    <button class="btn primary" onclick="showSummary()">分工統整 →</button>
+  </div>
+</div>
+<script>
+
+const MBR=['Bessie','Ferris','AI王','妙靈老師','Jenny老師','家家','書生'];
+const ACC={Bessie:'#7a6ab0',Ferris:'#4a9870','AI王':'#b07a20','妙靈老師':'#b04040','Jenny老師':'#3a78b0','家家':'#a05090','書生':'#5a8040'};
+const PERSON_BG={Bessie:'#f2f0fa',Ferris:'#edf7f1','AI王':'#fdf6e4','妙靈老師':'#fdf0f0','Jenny老師':'#eef5fd','家家':'#faf0f7','書生':'#f0f5ec'};
+const WDAYS=['日','一','二','三','四','五','六'];
+let _u=0; function uid(){return 't'+(++_u);}
+
+function saveData(){
+  try{
+    const data={tasks:[]};
+    document.querySelectorAll('.task-row').forEach(row=>{
+      const id=row.dataset.id; if(!id) return;
+      const ck=row.querySelector('.ck');
+      const tl=row.querySelector('.tl');
+      const tm=row.querySelector('[data-role="main"]');
+      const ts=row.querySelector('[data-role="sub"]');
+      const fr=row.querySelector('[data-type="freq"]');
+      const dy=row.querySelector('[data-type="day"]');
+      const nt=row.querySelector('.task-note');
+      data.tasks.push({id,checked:ck?ck.checked:false,text:tl?tl.textContent:'',main:tm?tm.value:'',sub:ts?ts.value:'',freq:fr?fr.value:'',day:dy?dy.value:'',note:nt?nt.value:''});
+    });
+    data.stations=[];
+    document.querySelectorAll('.sc').forEach((card)=>{
+      const scid=card.dataset.scid||'';
+      const tags=Array.from(card.querySelectorAll('.atag.on')).map(t=>t.dataset.m);
+      data.stations.push({scid,tags});
+    });
+    localStorage.setItem('ws_data',JSON.stringify(data));
+    document.getElementById('saveStatus').textContent='已儲存 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){}
+}
+
+function loadData(){
+  try{
+    const raw=localStorage.getItem('ws_data'); if(!raw) return;
+    const data=JSON.parse(raw);
+    const hasWrongData=(data.tasks||[]).some(t=>
+      (t.id||'').startsWith('col-myst_') && (t.main==='家家'||t.main==='書生'||t.sub==='家家'||t.sub==='書生')
+    );
+    if(hasWrongData){ localStorage.removeItem('ws_data'); return; }
+    (data.tasks||[]).forEach(t=>{
+      const row=document.querySelector(`.task-row[data-id="${t.id}"]`); if(!row) return;
+      const ck=row.querySelector('.ck'); if(ck){ck.checked=t.checked;if(t.checked){const lb=row.querySelector('.tl');if(lb)lb.style.textDecoration='line-through';}}
+      const tm=row.querySelector('[data-role="main"]'); if(tm){tm.value=t.main||'';tm.classList.toggle('on',!!t.main);}
+      const ts=row.querySelector('[data-role="sub"]'); if(ts){ts.value=t.sub||'';ts.classList.toggle('on',!!t.sub);}
+      const fr=row.querySelector('[data-type="freq"]'); if(fr&&t.freq){fr.value=t.freq;fr.classList.toggle('on',!!t.freq);const dy2=row.querySelector('[data-type="day"]');if(dy2){buildDayOpts(fr,dy2,t.freq);setTimeout(()=>{dy2.value=t.day||'';dy2.classList.toggle('on',!!t.day);},0);}}
+      const nt=row.querySelector('.task-note'); if(nt) nt.value=t.note||'';
+    });
+    (data.stations||[]).forEach(s=>{
+      const card=s.scid?document.querySelector(`.sc[data-scid="${s.scid}"]`):null; if(!card) return;
+      s.tags.forEach(m=>{const tag=card.querySelector(`.atag[data-m="${m}"]`);if(tag)tag.classList.add('on');});
+    });
+  }catch(e){}
+}
+
+function mkCtrlSel(role,id){
+  const sel=document.createElement('select');
+  sel.className='ctrl-sel';sel.dataset.role=role;sel.id=id;
+  const b=document.createElement('option');b.value='';b.textContent='－';sel.appendChild(b);
+  MBR.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o);});
+  sel.addEventListener('change',function(){this.classList.toggle('on',this.value!=='');saveData();});
+  return sel;
+}
+
+function buildDayOpts(freqSel,daySel,freq){
+  daySel.innerHTML='';
+  const blank=document.createElement('option');blank.value='';blank.textContent='－';daySel.appendChild(blank);
+  if(freq==='monthly'){for(let d=1;d<=31;d++){const o=document.createElement('option');o.value=d;o.textContent=d+'日';daySel.appendChild(o);}}
+  else if(freq==='weekly'){[['1','週一'],['2','週二'],['3','週三'],['4','週四'],['5','週五'],['6','週六'],['0','週日']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;daySel.appendChild(o);});}
+}
+
+function mkRow(text,id,preset){
+  const li=document.createElement('li');li.className='task-row';li.dataset.id=id;
+  const cb=document.createElement('input');cb.type='checkbox';cb.className='ck';cb.id='cb_'+id;
+  cb.addEventListener('change',function(){
+    const main=li.querySelector('.task-main');
+    if(main) main.querySelector('.tl').style.textDecoration=this.checked?'line-through':'none';
+    saveData();
+  });
+  const taskMain=document.createElement('div');taskMain.className='task-main';
+  const lb=document.createElement('label');lb.className='tl';lb.htmlFor='cb_'+id;lb.textContent=text;
+  const note=document.createElement('input');note.type='text';note.className='task-note';note.placeholder='備註…';
+  note.addEventListener('input',saveData);
+  taskMain.appendChild(lb);taskMain.appendChild(note);
+  const delBtn=document.createElement('button');delBtn.className='del-btn';delBtn.title='刪除';
+  delBtn.innerHTML='&times;';delBtn.dataset.deletable='false';
+  delBtn.addEventListener('click',function(){if(this.dataset.deletable==='true'){li.remove();saveData();}});
+  li.appendChild(cb);li.appendChild(taskMain);
+  const ctrl=document.createElement('div');ctrl.className='task-controls';
+  const mainUnit=document.createElement('div');mainUnit.className='ctrl-unit';
+  const mainLbl=document.createElement('span');mainLbl.className='ctrl-lbl';mainLbl.textContent='主';
+  const mainSel=mkCtrlSel('main','tm_'+id);
+  mainUnit.appendChild(mainLbl);mainUnit.appendChild(mainSel);
+  const subUnit=document.createElement('div');subUnit.className='ctrl-unit';
+  const subLbl=document.createElement('span');subLbl.className='ctrl-lbl';subLbl.textContent='副';
+  const subSel=mkCtrlSel('sub','ts_'+id);
+  subUnit.appendChild(subLbl);subUnit.appendChild(subSel);
+  const freqUnit=document.createElement('div');freqUnit.className='ctrl-unit';
+  const freqSel=document.createElement('select');freqSel.className='ctrl-sel freq-sel';freqSel.dataset.type='freq';
+  [['','頻率'],['monthly','每月'],['weekly','每週']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;freqSel.appendChild(o);});
+  const daySel=document.createElement('select');daySel.className='ctrl-sel day-sel';daySel.dataset.type='day';
+  buildDayOpts(freqSel,daySel,'');
+  freqSel.addEventListener('change',function(){buildDayOpts(this,daySel,this.value);this.classList.toggle('on',this.value!=='');daySel.classList.remove('on');saveData();});
+  daySel.addEventListener('change',function(){this.classList.toggle('on',this.value!=='');saveData();});
+  freqUnit.appendChild(freqSel);freqUnit.appendChild(daySel);
+  ctrl.appendChild(mainUnit);ctrl.appendChild(subUnit);ctrl.appendChild(freqUnit);
+  li.appendChild(ctrl);li.appendChild(delBtn);
+  if(preset){
+    if(preset.main){mainSel.value=preset.main;mainSel.classList.add('on');}
+    if(preset.sub){subSel.value=preset.sub;subSel.classList.add('on');}
+    if(preset.freq){freqSel.value=preset.freq;freqSel.classList.add('on');buildDayOpts(freqSel,daySel,preset.freq);if(preset.day){daySel.value=preset.day;daySel.classList.add('on');}}
+    if(preset.note){const nt=li.querySelector('.task-note');if(nt)nt.value=preset.note;}
+  }
+  return li;
+}
+
+function mkAssign(card){
+  const blk=document.createElement('div');blk.className='assign-blk';
+  const lb=document.createElement('div');lb.className='assign-lbl';lb.textContent='負責人';
+  blk.appendChild(lb);
+  const tgs=document.createElement('div');tgs.className='assign-tags';
+  MBR.forEach(m=>{
+    const t=document.createElement('span');t.className='atag';t.textContent=m;t.dataset.m=m;
+    t.addEventListener('click',function(){
+      this.classList.toggle('on');
+      const me=this.dataset.m;
+      if(this.classList.contains('on')){
+        card.querySelectorAll('.ctrl-sel').forEach(s=>{if(s.value===me){s.value='';s.classList.remove('on');}});
+      }
+      saveData();
+    });
+    tgs.appendChild(t);
+  });
+  blk.appendChild(tgs);card.appendChild(blk);
+  const addBtn=document.createElement('button');addBtn.className='add-task-btn';addBtn.textContent='＋ 新增任務';
+  addBtn.addEventListener('click',function(){
+    if(card.querySelector('.add-task-row')) return;
+    const row=document.createElement('div');row.className='add-task-row';
+    const inp=document.createElement('input');inp.type='text';inp.className='add-task-input';inp.placeholder='輸入任務內容…';
+    const ok=document.createElement('button');ok.className='add-ok';ok.textContent='確認';
+    const no=document.createElement('button');no.className='add-no';no.textContent='取消';
+    function doAdd(){
+      const val=inp.value.trim();
+      if(val){const id=uid();const newRow=mkRow(val,id);const db=newRow.querySelector('.del-btn');if(db)db.dataset.deletable='true';card.querySelector('.task-list').appendChild(newRow);saveData();}
+      row.remove();
+    }
+    ok.addEventListener('click',doAdd);no.addEventListener('click',()=>row.remove());
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')doAdd();if(e.key==='Escape')row.remove();});
+    row.appendChild(inp);row.appendChild(ok);row.appendChild(no);
+    card.insertBefore(row,addBtn);inp.focus();
+  });
+  card.appendChild(addBtn);
+}
+
+const DEFAULTS = {
+  'col-myst_s01_t1':{main:'妙靈老師',sub:'Bessie',freq:'monthly',day:1},
+  'col-myst_s01_t2':{main:'妙靈老師',sub:'Bessie',freq:'monthly',day:1},
+  'col-myst_s01_t3':{main:'Bessie',sub:'Jenny老師',freq:'monthly',day:1},
+  'col-myst_s01_t4':{main:'妙靈老師',sub:'',freq:'',day:''},
+  'col-myst_s02_t1':{main:'Bessie',sub:'',freq:'weekly',day:0},
+  'col-myst_s02_t2':{main:'妙靈老師',sub:'',freq:'weekly',day:0,note:'拍攝檔案交付'},
+  'col-myst_s02_t3':{main:'妙靈老師',sub:'Bessie',freq:'weekly',day:1},
+  'col-myst_s02_t4':{main:'Jenny老師',sub:'妙靈老師',freq:'',day:''},
+  'col-myst_s02_t5':{main:'Jenny老師',sub:'妙靈老師',freq:'',day:''},
+  'col-myst_s02_t6':{main:'Jenny老師',sub:'妙靈老師',freq:'',day:''},
+  'col-myst_s02_t7':{main:'AI王',sub:'',freq:'',day:''},
+  'col-myst_s02_t8':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-myst_s02_t9':{main:'AI王',sub:'Ferris',freq:'',day:''},
+  'col-myst_s03_t1':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-myst_s03_t2':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-myst_s03_t3':{main:'妙靈老師',sub:'',freq:'',day:''},
+  'col-myst_s03_t4':{main:'AI王',sub:'',freq:'',day:''},
+  'col-myst_s03_t5':{main:'AI王',sub:'Jenny老師',freq:'',day:''},
+  'col-myst_s04_t1':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-myst_s04_t2':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-myst_s04_t3':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-myst_s05_t1':{main:'Bessie',sub:'',freq:'',day:'',note:'line pay'},
+  'col-myst_s05_t2':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-myst_s05_t3':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-myst_s05_t4':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-myst_s05_t5':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-myst_s05_t6':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-myst_s05_t7':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-myst_s05_t8':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-myst_s05_t9':{main:'妙靈老師',sub:'',freq:'',day:''},
+  'col-myst_s06_t1':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-myst_s06_t2':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-myst_s06_t3':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-wloop_s01_t1':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s01_t2':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s01_t3':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s02_t1':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s02_t2':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s03_t1':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-wloop_s03_t2':{main:'AI王',sub:'',freq:'',day:''},
+  'col-wloop_s03_t3':{main:'AI王',sub:'',freq:'',day:''},
+  'col-wloop_s03_t4':{main:'AI王',sub:'',freq:'',day:''},
+  'col-wloop_s04_t1':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s04_t2':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s05_t1':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s05_t2':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-wloop_s05_t3':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s05_t4':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-wloop_s05_t5':{main:'',sub:'',freq:'',day:''},
+  'col-wloop_s06_t1':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-wloop_s06_t2':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-wloop_s06_t3':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-wloop_s07_t1':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-wloop_s07_t2':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-wloop_s07_t3':{main:'Bessie',sub:'',freq:'',day:''},
+  'col-wloop_s08_t1':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s08_t2':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s08_t3':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-wloop_s08_t4':{main:'Ferris',sub:'',freq:'',day:''},
+  'col-yoga_s01_t1':{main:'Jenny老師',sub:'Bessie',freq:'',day:''},
+  'col-yoga_s01_t2':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-yoga_s01_t3':{main:'',sub:'',freq:'',day:''},
+  'col-yoga_s01_t4':{main:'',sub:'',freq:'',day:''},
+  'col-yoga_s02_t1':{main:'Jenny老師',sub:'Bessie',freq:'',day:''},
+  'col-yoga_s02_t2':{main:'Bessie',sub:'Jenny老師',freq:'',day:''},
+  'col-yoga_s02_t3':{main:'妙靈老師',sub:'Jenny老師',freq:'',day:''},
+  'col-yoga_s03_t1':{main:'Jenny老師',sub:'Bessie',freq:'',day:''},
+  'col-yoga_s03_t2':{main:'Bessie',sub:'',freq:'',day:'',note:'身心靈語錄 脈輪'},
+  'col-yoga_s03_t3':{main:'',sub:'',freq:'',day:''},
+  'col-yoga_s03_t4':{main:'',sub:'',freq:'',day:''},
+  'col-yoga_s04_t1':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-yoga_s04_t2':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-yoga_s04_t3':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-yoga_s05_t1':{main:'',sub:'',freq:'',day:''},
+  'col-yoga_s05_t2':{main:'',sub:'',freq:'',day:''},
+  'col-yoga_s05_t3':{main:'',sub:'',freq:'',day:''},
+  'col-yoga_s06_t1':{main:'Jenny老師',sub:'',freq:'',day:''},
+  'col-yoga_s06_t2':{main:'Jenny老師',sub:'',freq:'',day:''}
+};
+
+function applyDefaults(force){
+  if(!force){
+    const existing=localStorage.getItem('ws_data');let hasData=false;
+    if(existing){try{const d=JSON.parse(existing);hasData=(d.tasks||[]).some(t=>t.main||t.sub||t.freq||t.note);}catch(e){}}
+    if(hasData)return;
+  }
+  document.querySelectorAll('.task-row').forEach(row=>{
+    const id=row.dataset.id;const def=DEFAULTS[id];if(!def)return;
+    const tm=row.querySelector('[data-role="main"]');
+    const ts=row.querySelector('[data-role="sub"]');
+    const fr=row.querySelector('[data-type="freq"]');
+    const dy=row.querySelector('[data-type="day"]');
+    const nt=row.querySelector('.task-note');
+    if(tm&&def.main){tm.value=def.main;tm.classList.toggle('on',!!def.main);}
+    if(ts&&def.sub){ts.value=def.sub;ts.classList.toggle('on',!!def.sub);}
+    if(fr&&def.freq){fr.value=def.freq;fr.classList.toggle('on',!!def.freq);buildDayOpts(fr,dy,def.freq);if(dy&&def.day!==undefined&&def.day!==''){setTimeout(()=>{dy.value=String(def.day);dy.classList.toggle('on',!!def.day);},10);}}
+    if(nt&&def.note)nt.value=def.note;
+  });
+  saveData();
+}
+
+function resetDefaults(){
+  if(confirm('重置為預設分配？目前填寫的資料會被覆蓋。')){
+    try{localStorage.removeItem('ws_data');}catch(e){}
+    location.reload();
+  }
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.sc').forEach((card)=>{
+    const scid=card.dataset.scid||uid();
+    const ul=card.querySelector('.task-list');
+    if(ul){
+      Array.from(ul.querySelectorAll('li')).forEach((li,ti)=>{
+        const id=scid+'_t'+(ti+1);
+        const preset={main:li.dataset.main||'',sub:li.dataset.sub||'',freq:li.dataset.freq||'',day:li.dataset.day||'',note:li.dataset.note||''};
+        const row=mkRow(li.textContent.trim(),id,preset);
+        ul.replaceChild(row,li);
+      });
+    }
+    mkAssign(card);
+  });
+  loadData();
+  applyDefaults(false);
+});
+
+function showSummary(){
+  const pM={},un=[];
+  const now=new Date();
+  const firstDow=new Date(now.getFullYear(),now.getMonth(),1).getDay();
+  const monthLabel=(now.getMonth()+1)+'月';
+
+  document.querySelectorAll('.brand-col').forEach(col=>{
+    const brand=col.querySelector('.col-name').textContent.trim();
+    col.querySelectorAll('.sc').forEach(card=>{
+      const sn=card.querySelector('.s-name')?card.querySelector('.s-name').textContent.trim():'';
+      const stMbr=Array.from(card.querySelectorAll('.atag.on')).map(t=>t.dataset.m);
+      card.querySelectorAll('.task-row').forEach(row=>{
+        const lb=row.querySelector('.tl');if(!lb)return;
+        const task=lb.textContent.trim();
+        const tm=row.querySelector('[data-role="main"]');
+        const ts=row.querySelector('[data-role="sub"]');
+        const fr=row.querySelector('[data-type="freq"]');
+        const dy=row.querySelector('[data-type="day"]');
+        const nt=row.querySelector('.task-note');
+        const freq=fr&&fr.value?fr.value:'';
+        const dayVal=dy&&dy.value?dy.value:'';
+        const day=freq==='monthly'&&dayVal?parseInt(dayVal):null;
+        const weekday=freq==='weekly'&&dayVal?dayVal:null;
+        const noteVal=nt&&nt.value.trim()?nt.value.trim():'';
+        const entries=[];
+        if(tm&&tm.value)entries.push({person:tm.value,role:'主'});
+        if(ts&&ts.value)entries.push({person:ts.value,role:'副'});
+        stMbr.forEach(m=>{if(!entries.find(e=>e.person===m))entries.push({person:m,role:''});});
+        if(!entries.length){un.push({brand,sn,task,freq,day,weekday,noteVal});}
+        else entries.forEach(({person,role})=>{
+          if(!pM[person])pM[person]=[];
+          pM[person].push({brand,sn,task,role,freq,day,weekday,noteVal});
+        });
+      });
+    });
+  });
+
+  const ov=document.createElement('div');
+  ov.style.cssText="position:fixed;inset:0;background:#f7f6f4;z-index:9999;overflow-y:auto;padding:48px 32px 80px;font-family:'Noto Sans TC',sans-serif;font-weight:300;";
+
+  const closeBtn=document.createElement('button');
+  closeBtn.textContent='← 返回';
+  closeBtn.style.cssText="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:9px 20px;border:1px solid #4a4840;background:transparent;color:#4a4840;cursor:pointer;float:right;";
+  closeBtn.addEventListener('click',()=>ov.remove());
+
+  const hdr=document.createElement('div');
+  hdr.style.cssText='display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:24px;margin-bottom:40px;border-bottom:1px solid #d8d5d0;';
+  const hdrtxt=document.createElement('div');
+  const ey=document.createElement('div');ey.style.cssText="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:#9a9890;text-transform:uppercase;margin-bottom:10px;";ey.textContent='Summary';
+  const tt=document.createElement('div');tt.style.cssText="font-family:'Noto Serif TC',serif;font-size:clamp(20px,3vw,30px);font-weight:300;letter-spacing:0.12em;";tt.textContent='分工統整';
+  hdrtxt.appendChild(ey);hdrtxt.appendChild(tt);
+  hdr.appendChild(hdrtxt);hdr.appendChild(closeBtn);
+  ov.appendChild(hdr);
+
+  const sec=document.createElement('div');sec.style.marginBottom='48px';
+  const slbl=document.createElement('div');slbl.style.cssText="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:#9a9890;text-transform:uppercase;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid #e8e5e0;";slbl.textContent='01 · 工作事項總覽';
+  sec.appendChild(slbl);
+  const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:#e8e5e0;border:1px solid #e8e5e0;';
+
+  const brandEmoji={'妙靈女子':'🔮 ','葫蘆流':'🎵 ','通通靈':'🏮 ','jennyoga':'🧘 '};
+
+  if(!Object.keys(pM).length){
+    const emp=document.createElement('div');emp.style.cssText='grid-column:1/-1;background:#fff;text-align:center;padding:40px;font-family:Space Mono,monospace;font-size:9px;color:#c8c5c0;letter-spacing:2px;';emp.textContent='NO ASSIGNMENTS YET';grid.appendChild(emp);
+  }
+
+  Object.entries(pM).forEach(([person,tasks])=>{
+    const ac=ACC[person]||'#999';const bg=PERSON_BG[person]||'#fff';
+    const byBrand={};tasks.forEach(t=>{if(!byBrand[t.brand])byBrand[t.brand]=[];byBrand[t.brand].push(t);});
+    const card=document.createElement('div');card.style.cssText='background:'+bg+';overflow:hidden;';
+    const cardHdr=document.createElement('div');cardHdr.style.cssText='padding:12px 16px 10px;border-bottom:1px solid #e0ddd8;position:relative;';
+    const acBar=document.createElement('div');acBar.style.cssText='position:absolute;top:0;left:0;right:0;height:3px;background:'+ac+';';cardHdr.appendChild(acBar);
+    const nr=document.createElement('div');nr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-top:4px;';
+    const nm=document.createElement('span');nm.style.cssText="font-family:'Noto Serif TC',serif;font-size:15px;font-weight:400;letter-spacing:0.06em;";nm.textContent=person;
+    const ct=document.createElement('span');ct.style.cssText="font-family:'Space Mono',monospace;font-size:8px;color:#c8c5c0;";ct.textContent=tasks.length+' tasks';
+    nr.appendChild(nm);nr.appendChild(ct);cardHdr.appendChild(nr);card.appendChild(cardHdr);
+    Object.entries(byBrand).forEach(([brand,bt])=>{
+      const bdiv=document.createElement('div');bdiv.style.cssText='padding:8px 16px 4px;border-bottom:1px solid rgba(0,0,0,0.05);';
+      const blbl=document.createElement('div');blbl.style.cssText="font-family:'Noto Serif TC',serif;font-size:13px;color:#1a1917;margin-bottom:6px;border-bottom:1px solid #e0ddd8;padding-bottom:5px;";blbl.textContent=(brandEmoji[brand]||'')+brand;bdiv.appendChild(blbl);
+      bt.forEach(t=>{
+        const tr=document.createElement('div');tr.style.cssText='padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.04);display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;';
+        const sne=document.createElement('span');sne.style.cssText="font-family:'Space Mono',monospace;font-size:9px;color:#6a6560;flex-shrink:0;font-weight:700;margin-top:2px;";sne.textContent=t.sn;
+        const te=document.createElement('span');te.style.cssText='font-size:11px;color:#4a4840;line-height:1.4;flex:1;';te.textContent=t.task;
+        const tags=document.createElement('div');tags.style.cssText='display:flex;align-items:center;flex-shrink:0;';
+        if(t.role){const rt=document.createElement('span');rt.style.cssText='font-size:7.5px;background:'+(t.role==='主'?'#1a1917':'#9a9890')+';color:#fff;padding:1px 6px;margin-left:4px;';rt.textContent=t.role;tags.appendChild(rt);}
+        if(t.freq==='monthly'&&t.day){const dt=document.createElement('span');dt.style.cssText='font-size:7.5px;color:'+ac+';margin-left:4px;';dt.textContent=t.day+'日';tags.appendChild(dt);}
+        else if(t.freq==='weekly'&&t.weekday!==null&&t.weekday!==''){const dt=document.createElement('span');dt.style.cssText='font-size:7.5px;color:'+ac+';margin-left:4px;';dt.textContent='週'+WDAYS[parseInt(t.weekday)];tags.appendChild(dt);}
+        tr.appendChild(sne);tr.appendChild(te);tr.appendChild(tags);bdiv.appendChild(tr);
+        if(t.noteVal){const ne=document.createElement('div');ne.style.cssText='font-size:9px;color:#9a9890;padding:1px 0 3px 12px;font-style:italic;';ne.textContent=t.noteVal;bdiv.appendChild(ne);}
+      });
+      card.appendChild(bdiv);
+    });
+    grid.appendChild(card);
+  });
+  sec.appendChild(grid);ov.appendChild(sec);
+
+  if(un.length){
+    const s3=document.createElement('div');
+    const s3l=document.createElement('div');s3l.style.cssText="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:#9a9890;text-transform:uppercase;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #e8e5e0;";s3l.textContent='03 · 未分配';s3.appendChild(s3l);
+    const ub=document.createElement('div');ub.style.cssText='background:#fff;border:1.5px solid #e8e5e0;padding:14px 20px;';
+    un.forEach(t=>{
+      const ur=document.createElement('div');ur.style.cssText='display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #f7f6f4;';
+      const u1=document.createElement('span');u1.style.cssText="font-family:'Space Mono',monospace;font-size:8px;color:#d8d5d0;flex-shrink:0;";u1.textContent=t.brand+' · '+t.sn;
+      const u2=document.createElement('span');u2.style.cssText='font-size:11px;color:#c8c5c0;';u2.textContent=t.task;
+      ur.appendChild(u1);ur.appendChild(u2);ub.appendChild(ur);
+    });
+    s3.appendChild(ub);ov.appendChild(s3);
+  }
+
+  document.body.appendChild(ov);
+}
+
+</script>
+<div class="kanban">
+<div class="brand-col col-myst">
+  <div class="col-header"><div class="col-accent"></div><span class="col-emoji">🔮</span><div class="col-name">妙靈女子</div><div class="col-sub">TIKTOK · 小紅書 · INS · LINE@</div><div class="col-status">成長期</div></div>
+  <div class="col-body">
+    <div class="sc" data-scid="col-myst_s01"><div class="sc-hdr"><span class="s-num">01</span><span class="s-name">內容策略與方向</span><span class="s-type">創意核心</span></div><ul class="task-list"><li data-main="妙靈老師" data-sub="Bessie" data-freq="monthly" data-day="1">每月主題方向設定（妙妙廟 · 節日節氣 · 大眾占卜）</li><li data-main="妙靈老師" data-sub="Bessie" data-freq="monthly" data-day="1">每月主題貼文撰寫</li><li data-main="Bessie" data-sub="Jenny老師" data-freq="monthly" data-day="1">每月活動企劃主題統籌</li><li data-main="妙靈老師">短影音腳本撰寫與 CTA 設計</li></ul></div>
+    <div class="sc" data-scid="col-myst_s02"><div class="sc-hdr"><span class="s-num">02</span><span class="s-name">內容製作</span><span class="s-type">製作執行</span></div><ul class="task-list"><li data-main="Bessie" data-freq="weekly" data-day="0">固定圖文式｜製作</li><li data-main="妙靈老師" data-freq="weekly" data-day="0" data-note="拍攝檔案交付">固定短影音｜拍攝</li><li data-main="妙靈老師" data-sub="Bessie" data-freq="weekly" data-day="1">固定短影音｜剪輯</li><li data-main="Jenny老師" data-sub="妙靈老師">互惠/業配｜拍攝</li><li data-main="Jenny老師" data-sub="妙靈老師">互惠/業配｜剪輯</li><li data-main="Jenny老師" data-sub="妙靈老師">互惠/業配｜圖文製作</li><li data-main="AI王">互惠/業配｜AI 平面圖</li><li data-main="Ferris">互惠/業配｜AI 主題曲</li><li data-main="AI王" data-sub="Ferris">互惠/業配｜AI 動態廣告</li></ul></div>
+    <div class="sc" data-scid="col-myst_s03"><div class="sc-hdr"><span class="s-num">03</span><span class="s-name">社群發布</span><span class="s-type">SOP</span></div><ul class="task-list"><li data-main="Jenny老師">固定｜排程發文設定（TikTok · IG · FB · YT）</li><li data-main="Jenny老師">互惠/業配｜排程發文設定（TikTok · IG · FB · YT）</li><li data-main="妙靈老師">小紅書手動上架</li><li data-main="AI王">平日限時動態</li><li data-main="AI王" data-sub="Jenny老師">脆脆脆</li></ul></div>
+    <div class="sc" data-scid="col-myst_s04"><div class="sc-hdr"><span class="s-num">04</span><span class="s-name">導流自動化</span><span class="s-type">工具設定</span></div><ul class="task-list"><li data-main="Jenny老師">LinkDM 關鍵字觸發設定</li><li data-main="Bessie">LINE@ 關鍵字自動回覆／維護</li><li data-main="Bessie">網站維護</li></ul></div>
+    <div class="sc" data-scid="col-myst_s05"><div class="sc-hdr"><span class="s-num">05</span><span class="s-name">預約 · 金流 · 客服</span><span class="s-type">執行中</span></div><ul class="task-list"><li data-main="Bessie" data-note="line pay">服務定價</li><li data-main="Ferris">綠界支付</li><li data-main="Jenny老師">妙靈老師排程管理</li><li data-main="Jenny老師">LINE@｜預約占卜提醒</li><li data-main="Jenny老師">LINE@｜訊息回覆 · 預約諮詢</li><li data-main="Jenny老師">TikTok｜留言回覆 · 私訊處理</li><li data-main="Jenny老師">INS｜留言 · DM 回覆</li><li data-main="Jenny老師">FB｜訊息 · 留言回覆</li><li data-main="妙靈老師">小紅書｜私信 · 評論回覆</li></ul></div>
+    <div class="sc" data-scid="col-myst_s06"><div class="sc-hdr"><span class="s-num">06</span><span class="s-name">數據回收</span><span class="s-type">週期</span></div><ul class="task-list"><li data-main="Bessie">週報數據整理</li><li data-main="Bessie">預約轉換率追蹤</li><li data-main="Bessie">下一輪內容方向決策</li></ul></div>
+    <div class="sc-alert">綠界串接後需完整走一次付款流程測試</div>
+  </div>
+</div>
+<div class="brand-col col-wloop">
+  <div class="col-header"><div class="col-accent"></div><span class="col-emoji">🎵</span><div class="col-name">葫蘆流</div><div class="col-sub">YT · SPOTIFY · TIKTOK · IG</div><div class="col-status">建立期</div></div>
+  <div class="col-body">
+    <div class="sc" data-scid="col-wloop_s01"><div class="sc-hdr"><span class="s-num">01</span><span class="s-name">創作核心</span><span class="s-type">創意核心</span></div><ul class="task-list"><li data-main="Ferris">企劃撰寫</li><li data-main="Ferris">使用場景概念定向</li><li data-main="Ferris">主題直播企劃</li></ul></div>
+    <div class="sc" data-scid="col-wloop_s02"><div class="sc-hdr"><span class="s-num">02</span><span class="s-name">音樂生產</span><span class="s-type">AI 生成</span></div><ul class="task-list"><li data-main="Ferris">AI 歌曲生成</li><li data-main="Ferris">主題直播串燒</li></ul></div>
+    <div class="sc" data-scid="col-wloop_s03"><div class="sc-hdr"><span class="s-num">03</span><span class="s-name">視覺製作</span><span class="s-type">製作執行</span></div><ul class="task-list"><li data-main="Bessie">主視覺 · 封面圖設計</li><li data-main="AI王">動態 MV 製作</li><li data-main="AI王">循環 MV 製作</li><li data-main="AI王">短影音 MV 製作</li></ul></div>
+    <div class="sc" data-scid="col-wloop_s04"><div class="sc-hdr"><span class="s-num">04</span><span class="s-name">文案系統</span><span class="s-type">SOP</span></div><ul class="task-list"><li data-main="Ferris">各平台標題 · 描述文案撰寫</li><li data-main="Ferris">金句 · 情境文案</li></ul></div>
+    <div class="sc" data-scid="col-wloop_s05"><div class="sc-hdr"><span class="s-num">05</span><span class="s-name">上架發布</span><span class="s-type">SOP</span></div><ul class="task-list"><li data-main="Ferris">數位上架</li><li data-main="Jenny老師">YouTube 上架（縮圖 · 描述 · 標籤）</li><li data-main="Ferris">Spotify 串流平台上架</li><li data-main="Jenny老師">IG · TikTok · 脆 短影音發布</li><li>發布時序排程規劃</li></ul></div>
+    <div class="sc" data-scid="col-wloop_s06"><div class="sc-hdr"><span class="s-num">06</span><span class="s-name">行銷擴散</span><span class="s-type">夥伴執行</span></div><ul class="task-list"><li data-main="Bessie">廣告投放設定與追蹤</li><li data-main="Bessie">跨平台導流操作</li><li data-main="Bessie">預熱節奏規劃與執行</li></ul></div>
+    <div class="sc" data-scid="col-wloop_s07"><div class="sc-hdr"><span class="s-num">07</span><span class="s-name">數據回收</span><span class="s-type">週期</span></div><ul class="task-list"><li data-main="Bessie">各平台留存 · 點擊率整理</li><li data-main="Bessie">廣告成效分析</li><li data-main="Bessie">下一首歌的製作決策依據</li></ul></div>
+    <div class="sc" data-scid="col-wloop_s08"><div class="sc-hdr"><span class="s-num">08</span><span class="s-name">客服</span><span class="s-type">日常維護</span></div><ul class="task-list"><li data-main="Ferris">YouTube 留言回覆 · 社群互動</li><li data-main="Ferris">TikTok 留言 · 私訊處理</li><li data-main="Ferris">INS 留言 · DM 回覆</li><li data-main="Ferris">Spotify 聽眾留言回應</li></ul></div>
+    <div class="sc-alert">03 視覺定稿後，04 文案才能最終確認</div>
+  </div>
+</div>
+<div class="brand-col col-yoga">
+  <div class="col-header"><div class="col-accent"></div><span class="col-emoji">🧘</span><div class="col-name">jennyoga</div><div class="col-sub">INS 主力</div><div class="col-status">KOL 養帳號</div></div>
+  <div class="col-body">
+    <div class="sc" data-scid="col-yoga_s01"><div class="sc-hdr"><span class="s-num">01</span><span class="s-name">人設 · 帳號定位</span><span class="s-type">先做</span></div><ul class="task-list"><li data-main="Jenny老師" data-sub="Bessie">Jenny 老師人設確認（風格 · 說話方式 · 受眾）</li><li data-main="Jenny老師">INS Bio 重寫</li><li>頭像 · 主頁九宮格視覺規劃</li><li>品牌色調 · Canva 模板建立</li></ul></div>
+    <div class="sc" data-scid="col-yoga_s02"><div class="sc-hdr"><span class="s-num">02</span><span class="s-name">內容策略</span><span class="s-type">創意核心</span></div><ul class="task-list"><li data-main="Jenny老師" data-sub="Bessie">內容三柱定案（動作教學 · 日常 · 身心靈）</li><li data-main="Bessie" data-sub="Jenny老師">發文頻率規劃（Reels · 圖文）</li><li data-main="妙靈老師" data-sub="Jenny老師">腳本格式 SOP 建立</li></ul></div>
+    <div class="sc" data-scid="col-yoga_s03"><div class="sc-hdr"><span class="s-num">03</span><span class="s-name">內容製作</span><span class="s-type">製作執行</span></div><ul class="task-list"><li data-main="Jenny老師" data-sub="Bessie">瑜珈示範短影音（INS Reels）</li><li data-main="Bessie" data-note="身心靈語錄 脈輪">身心靈語錄 · 日常圖文貼文</li><li>限時動態互動（問答 · 投票）</li><li>CapCut 剪輯 · Canva 製作</li></ul></div>
+    <div class="sc" data-scid="col-yoga_s04"><div class="sc-hdr"><span class="s-num">04</span><span class="s-name">帳號成長操作</span><span class="s-type">SOP</span></div><ul class="task-list"><li data-main="Jenny老師">Hashtag 策略設定與定期更新</li><li data-main="Jenny老師">同類帳號互動 · 留言回覆</li><li data-main="Jenny老師">適時考慮擴展 TikTok / YT Shorts</li></ul></div>
+    <div class="sc" data-scid="col-yoga_s05"><div class="sc-hdr"><span class="s-num">05</span><span class="s-name">數據追蹤</span><span class="s-type">週期</span></div><ul class="task-list"><li>INS 觸及率 · 互動率 · 粉絲成長</li><li>哪類內容最有反應 → 加強製作</li><li>累積粉絲量後規劃開課時機</li></ul></div>
+    <div class="sc" data-scid="col-yoga_s06"><div class="sc-hdr"><span class="s-num">06</span><span class="s-name">客服</span><span class="s-type">日常維護</span></div><ul class="task-list"><li data-main="Jenny老師">INS 留言回覆 · DM 回覆</li><li data-main="Jenny老師">INS 限時動態互動回應</li></ul></div>
+    <div class="sc-alert">先養人不賣課，信任建立後開課水到渠成</div>
+  </div>
+</div>
+<div class="brand-col col-tl">
+  <div class="col-header"><div class="col-accent"></div><span class="col-emoji">🏮</span><div class="col-name">通通靈</div><div class="col-sub">TIKTOK · 小紅書 · INS · LINE@</div><div class="col-status">待啟動</div></div>
+  <div class="col-body">
+    <div class="sc" data-scid="col-tl_s01"><div class="sc-hdr"><span class="s-num">01</span><span class="s-name">行銷企劃定案</span><span class="s-type">先做</span></div><ul class="task-list"><li>品牌定位確認（中式占卜 · 道士 · 紫微八字）</li><li>目標受眾畫像設定</li><li>各平台內容方向與風格規範</li><li>與妙靈女子差異化定位確認</li></ul></div>
+    <div class="sc" data-scid="col-tl_s02"><div class="sc-hdr"><span class="s-num">02</span><span class="s-name">內容製作</span><span class="s-type">製作執行</span></div><ul class="task-list"><li>首批腳本撰寫（中式靈性風格）</li><li>短影音剪輯</li><li>AI 圖像生成（八卦 · 道符 · 命盤）</li><li>Canva 圖文模板製作</li></ul></div>
+    <div class="sc" data-scid="col-tl_s03"><div class="sc-hdr"><span class="s-num">03</span><span class="s-name">社群發布</span><span class="s-type">SOP</span></div><ul class="task-list"><li>Metricool 排程設定</li><li>小紅書手動上架</li><li>INS 帳號優化設定</li></ul></div>
+    <div class="sc" data-scid="col-tl_s04"><div class="sc-hdr"><span class="s-num">04</span><span class="s-name">導流自動化</span><span class="s-type">工具設定</span></div><ul class="task-list"><li>LinkDM 關鍵字設定（算命 · 八字 · 紫微）</li><li>LINE@ 關鍵字自動回覆設定</li><li>預約連結推送流程建立</li></ul></div>
+    <div class="sc" data-scid="col-tl_s05"><div class="sc-hdr"><span class="s-num">05</span><span class="s-name">預約 · 金流 · 服務</span><span class="s-type">待建立</span></div><ul class="task-list"><li>服務項目確認（紫微 · 八字 · 問事 · 擇日）</li><li>定價設定</li><li>預約系統串接（沿用妙靈模式）</li><li>綠界支付串接</li></ul></div>
+    <div class="sc" data-scid="col-tl_s06"><div class="sc-hdr"><span class="s-num">06</span><span class="s-name">數據回收</span><span class="s-type">週期</span></div><ul class="task-list"><li>各平台數據整理</li><li>預約轉換追蹤</li><li>內容優化決策</li></ul></div>
+    <div class="sc" data-scid="col-tl_s07"><div class="sc-hdr"><span class="s-num">07</span><span class="s-name">客服</span><span class="s-type">日常維護</span></div><ul class="task-list"><li>LINE@ 訊息回覆 · 問事諮詢</li><li>TikTok 留言回覆 · 私訊處理</li><li>小紅書 私信 · 評論回覆</li><li>INS 留言 · DM 回覆</li><li>FB 訊息 · 留言處理</li></ul></div>
+    <div class="sc-alert">平台已備好，01 行銷企劃定案後隨時可啟動</div>
+  </div>
+</div>
+</div>
+</div>
+<a href="calendar.html" class="cal-link-btn">行事曆 →</a>
+</body>
+</html>
