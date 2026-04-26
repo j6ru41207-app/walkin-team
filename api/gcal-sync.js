@@ -85,7 +85,7 @@ export default async function handler(req, res) {
 
       // ========== 2. 新增事件 ==========
       case 'create': {
-        const { title, date, dateEnd, time, kw, note, brand, editor } = params;
+        const { title, date, dateEnd, time, kw, note, brand, editor, clientUid } = params;
 
         if (!title || !date) {
           return res.status(400).json({ ok: false, error: '缺少 title 或 date' });
@@ -101,17 +101,43 @@ export default async function handler(req, res) {
           title, date, dateEnd, time, kw, note, brand, editor
         });
 
-        const result = await calendar.events.insert({
-          calendarId: calendarId,
-          requestBody: eventResource,
-        });
+        // 冪等鍵：把客戶端的 clientUid 轉成符合 Google Calendar event id 規範
+        // 規則：5-1024 字、只允許小寫 a-v 與 0-9（base32hex 字元集）
+        // 同一個 id 重複送，Google 會回 409（重複），藉此擋掉 retry 造成的重複事件
+        let customEventId = null;
+        if (clientUid) {
+          let safe = String(clientUid).toLowerCase().replace(/[^a-v0-9]/g, '');
+          if (safe.length >= 5) {
+            customEventId = safe.slice(0, 1024);
+          }
+        }
 
-        return res.status(200).json({
-          ok: true,
-          gcalId: result.data.id,
-          htmlLink: result.data.htmlLink,
-          calendarId: calendarId,
-        });
+        try {
+          const result = await calendar.events.insert({
+            calendarId: calendarId,
+            requestBody: customEventId
+              ? { ...eventResource, id: customEventId }
+              : eventResource,
+          });
+          return res.status(200).json({
+            ok: true,
+            gcalId: result.data.id,
+            htmlLink: result.data.htmlLink,
+            calendarId: calendarId,
+          });
+        } catch (err) {
+          // 409 = 此 id 已存在（代表 retry 觸發、但被冪等鍵擋下）
+          // 把已存在的 id 回傳，讓前端知道實際同步成功了
+          if (err.code === 409 && customEventId) {
+            return res.status(200).json({
+              ok: true,
+              gcalId: customEventId,
+              note: '事件已存在（冪等保護）',
+              calendarId: calendarId,
+            });
+          }
+          throw err;
+        }
       }
 
       // ========== 3. 修改事件 ==========
