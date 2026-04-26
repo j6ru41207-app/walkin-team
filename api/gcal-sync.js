@@ -2,6 +2,7 @@
 // Google Calendar 雙向同步 API
 // 路徑：/api/gcal-sync
 // 用途：網頁 ↔ Google Calendar 的代理層
+// 支援多品牌（meowling / hulu / tongling / jennyoga）
 // ============================================================
 
 import { google } from 'googleapis';
@@ -20,6 +21,27 @@ function getAuth() {
   );
 
   return auth;
+}
+
+// ---------- 依品牌取得對應的 Calendar ID ----------
+// 環境變數預期：
+//   GCAL_CALENDAR_ID            → 妙靈（沿用原本的，向下相容）
+//   GCAL_CALENDAR_ID_HULU       → 葫蘆流
+//   GCAL_CALENDAR_ID_TONGLING   → 通通靈
+//   GCAL_CALENDAR_ID_JENNYOGA   → jennyoga（之後再補）
+function getCalendarIdByBrand(brand) {
+  // brand 會是中文（妙靈 / 葫蘆流 / 通通靈 / jennyoga）或英文 key
+  const map = {
+    '妙靈': process.env.GCAL_CALENDAR_ID,
+    'meowling': process.env.GCAL_CALENDAR_ID,
+    '葫蘆流': process.env.GCAL_CALENDAR_ID_HULU,
+    'hulu': process.env.GCAL_CALENDAR_ID_HULU,
+    '通通靈': process.env.GCAL_CALENDAR_ID_TONGLING,
+    'tongling': process.env.GCAL_CALENDAR_ID_TONGLING,
+    'jennyoga': process.env.GCAL_CALENDAR_ID_JENNYOGA,
+  };
+  // 找不到就 fallback 到妙靈（避免完全失效，保留向下相容）
+  return map[brand] || process.env.GCAL_CALENDAR_ID;
 }
 
 // ---------- 主 API 處理函式 ----------
@@ -52,7 +74,12 @@ export default async function handler(req, res) {
           message: 'API 正常運作',
           time: new Date().toISOString(),
           serviceAccount: process.env.GCAL_CLIENT_EMAIL,
-          primaryCalendar: process.env.GCAL_CALENDAR_ID,
+          calendars: {
+            meowling: process.env.GCAL_CALENDAR_ID ? '已設定' : '未設定',
+            hulu: process.env.GCAL_CALENDAR_ID_HULU ? '已設定' : '未設定',
+            tongling: process.env.GCAL_CALENDAR_ID_TONGLING ? '已設定' : '未設定',
+            jennyoga: process.env.GCAL_CALENDAR_ID_JENNYOGA ? '已設定' : '未設定',
+          },
         });
       }
 
@@ -64,13 +91,18 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: '缺少 title 或 date' });
         }
 
+        const calendarId = getCalendarIdByBrand(brand);
+        if (!calendarId) {
+          return res.status(400).json({ ok: false, error: `品牌「${brand}」尚未設定 Calendar ID` });
+        }
+
         // 處理日期時間
         const eventResource = buildEventResource({
           title, date, dateEnd, time, kw, note, brand, editor
         });
 
         const result = await calendar.events.insert({
-          calendarId: process.env.GCAL_CALENDAR_ID,
+          calendarId: calendarId,
           requestBody: eventResource,
         });
 
@@ -78,6 +110,7 @@ export default async function handler(req, res) {
           ok: true,
           gcalId: result.data.id,
           htmlLink: result.data.htmlLink,
+          calendarId: calendarId,
         });
       }
 
@@ -89,12 +122,17 @@ export default async function handler(req, res) {
           return res.status(400).json({ ok: false, error: '缺少 gcalId' });
         }
 
+        const calendarId = getCalendarIdByBrand(brand);
+        if (!calendarId) {
+          return res.status(400).json({ ok: false, error: `品牌「${brand}」尚未設定 Calendar ID` });
+        }
+
         const eventResource = buildEventResource({
           title, date, dateEnd, time, kw, note, brand, editor
         });
 
         const result = await calendar.events.update({
-          calendarId: process.env.GCAL_CALENDAR_ID,
+          calendarId: calendarId,
           eventId: gcalId,
           requestBody: eventResource,
         });
@@ -107,15 +145,20 @@ export default async function handler(req, res) {
 
       // ========== 4. 刪除事件 ==========
       case 'delete': {
-        const { gcalId } = params;
+        const { gcalId, brand } = params;
 
         if (!gcalId) {
           return res.status(400).json({ ok: false, error: '缺少 gcalId' });
         }
 
+        const calendarId = getCalendarIdByBrand(brand);
+        if (!calendarId) {
+          return res.status(400).json({ ok: false, error: `品牌「${brand}」尚未設定 Calendar ID` });
+        }
+
         try {
           await calendar.events.delete({
-            calendarId: process.env.GCAL_CALENDAR_ID,
+            calendarId: calendarId,
             eventId: gcalId,
           });
           return res.status(200).json({ ok: true });
